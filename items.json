@@ -1,0 +1,17 @@
+{
+    "teas": [
+        {
+            "id": 1,
+            "name": "chocolate",
+            "price": 599,
+            "imgName": "../images/chocolateBoba.png"
+        },
+        {
+            "id": 2,
+            "name": "vanilla",
+            "price": 399,
+            "imgName": "../images/vanillaBoba.jpeg"
+        }
+    ]
+    
+}
