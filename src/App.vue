@@ -44,42 +44,7 @@
 
 import axios from 'axios'
 
-var stripeHandler = StripeCheckout.configure({
-  key: stripePublicKey,
-  locale: 'auto',
-  token: function(token) {
-    var items = []
-    var order = document.getElementsByClassName('order-item')
-    var i;
-    for (i = 0; i < order.length; i ++) {
-      items.push(order[i].id)
-    }
-    axios
-    .post('http://localhost:8090/purchase', 
-      {
-        items: items,
-        stripeTokenId: token.id
-      },
-      { 
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
-      }
-    ).then(function(data) {
-      alert(data.data.message)
-      //GET RID OF CAAART ITEMS HEREE
-    }).catch(function(err) {
-      console.error(err)
-    })
-
-    var cartItems = document.getElementById('cart-summary')
-    while (cartItems.hasChildNodes()) {
-      cartItems.removeChild(cartItems.firstChild)
-    }
-  }
-})
-
+var stripe = Stripe(stripePublicKey)
 
 export default {
   name: 'app',
@@ -91,7 +56,7 @@ export default {
       order: [
 
       ],
-      total: 0
+      total: 0,
     }
   },
   methods: {
@@ -111,23 +76,61 @@ export default {
       var ids = []
       for (i = 0; i < this.order.length; i++) {
         ids.push(this.order[i].id)
-    }
+      }
 
       axios
       .get('http://localhost:8090/get_price/'+ids)
       .then(response => {
         console.log('RESPONSE', response.data)
         price = response.data
-        stripeHandler.open({
-          amount: price
 
+
+        var items = []
+        var order = document.getElementsByClassName('order-item')
+        var i;
+        for (i = 0; i < order.length; i ++) {
+          items.push(order[i].id)
+        }
+        console.log(items)
+        axios
+        .get('http://localhost:8090/order_info/'+items)
+        .then(function(responseJSON) {
+          var your_order = responseJSON.data.your_order
+          var total = responseJSON.data.total
+
+          console.log('ORDER INFO RESPONSE', your_order, total)
+
+          axios
+          .post('http://localhost:8090/order_id',
+            {
+              your_order: your_order,
+              total: total
+            },
+            { 
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+              }
+            }
+          ).then(function(responseJSON) {
+            console.log('ORDER ID RESPONSE', responseJSON.data.session_id)
+            var sessionID = responseJSON.data.session_id;
+            stripe.redirectToCheckout({
+              sessionId: sessionID
+            }).then(function(result) {
+              alert(result.error.message)
+            })
+          })
         })
+
+
       })
       .catch(err => {
         alert(err)
       })
 
       this.total = 0
+      
 
 
     
